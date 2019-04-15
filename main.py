@@ -1,12 +1,18 @@
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtWidgets import *
+from PyQt5.QtCore import QTimer
 
 from gui import mainwindow
+
+import os
+from os import listdir
+from os.path import isfile, join
 
 import sys
 import time
 import usb.core
 import usb.util
+import shutil
 
 import tools
 
@@ -21,37 +27,50 @@ class MainWindow(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.devices = []
         self.vendorList = []
         self.productList = []
-        self.pathList = []
+        self.FlashPathList = []
+        self.PCPathList = []
         
         self.find_storage_devices()
 
         # Attach action to syncButton
         self.syncButton.clicked.connect(self.syncButtonAction)
 
+        # Timer
+        timer = QTimer()
+        timer.timeout.connect(self.syncFiles)
+        timer.start(1000)
+
+
     def syncButtonAction(self):
         if self.syncButton.text() == 'Delete':
-            self.pathList.remove(self.vendorList.index(self.devices[self.comboBox.currentIndex()].idVendor))
+            # Clear lists
+            self.FlashPathList.remove(self.vendorList.index(self.devices[self.comboBox.currentIndex()].idVendor))
+            self.PCPathList.remove(self.vendorList.index(self.devices[self.comboBox.currentIndex()].idVendor))
             self.vendorList.remove(self.devices[self.comboBox.currentIndex()].idVendor)
             self.productList.remove(self.devices[self.comboBox.currentIndex()].idProduct)
 
+            # Save lists
             settings.setValue('idVendor', self.vendorList)
             settings.setValue('idProduct', self.productList)
+            settings.setValue('flashPathList', self.FlashPathList)
+            settings.setValue('PCPathList', self.PCPathList)
         else:
             # Open file dialog to choose directory to sync
             fpath = QFileDialog.getExistingDirectory(self, 'Choose FLASH DRIVE directory')
 
+            pcpath = QFileDialog.getExistingDirectory(self, 'Choose PC directory')
+
             self.vendorList.append(self.devices[self.comboBox.currentIndex()].idVendor)
             self.productList.append(self.devices[self.comboBox.currentIndex()].idProduct)
-            self.pathList.append(fpath)
+            self.FlashPathList.append(fpath)
+            self.PCPathList.append(pcpath)
 
             settings.setValue('idVendor', self.vendorList)
             settings.setValue('idProduct', self.productList)
-            settings.setValue('pathList', self.pathList)
+            settings.setValue('flashPathList', self.FlashPathList)
+            settings.setValue('PCPathList', self.PCPathList)
 
-            print(self.vendorList)
-            print(self.productList)
-            print(self.pathList)
-
+        # Update GUI
         self.find_storage_devices()
 
     def find_storage_devices(self):
@@ -73,15 +92,48 @@ class MainWindow(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                         # Load idVendor and idProduct from settings
                         self.vendorList = settings.value('idVendor', [], int)
                         self.productList = settings.value('idProduct', [], int)
+                        self.FlashPathList = settings.value('flashPathList', [], str)
+                        self.PCPathList = settings.value('PCPathList', [], str)
 
                         # Change syncButton text
                         if dev.idVendor in self.vendorList and dev.idProduct in self.productList:
                             self.status_label.setText('Status: Tracked')
                             self.syncButton.setText('Delete')
+
+                            # If app founded saved drivers - sync it!
+                            self.syncFiles(self.vendorList.index(dev.idVendor))
                         else:
                             self.status_label.setText('Status: Not tracked')
                             self.syncButton.setText('Sync')
-                        
+
+
+    def syncFiles(self, idx):
+        flashpath = self.FlashPathList[idx] 
+        pcpath = self.PCPathList[idx] 
+
+        flashfiles = [f for f in listdir(flashpath) if isfile(join(flashpath, f))] 
+        pcfiles = [f for f in listdir(pcpath) if isfile(join(pcpath, f))] 
+        # print(flashfiles)
+        # print(pcfiles)
+
+        # PC is leader
+        for pcfile in pcfiles: 
+            synced = False
+
+            for ffile in flashfiles: 
+                if tools.get_hash(os.path.join(pcpath, pcfile)) == tools.get_hash(os.path.join(flashpath, ffile)):
+                    # If even 1 file is matched, OK
+                    synced = True
+            
+            # If noone file is matched, copying..
+            if synced == False:
+                shutil.copy2(os.path.join(pcpath, pcfile), flashpath)
+                print('FILE %s WAS COPIED' % os.path.join(pcpath, pcfile))
+
+
+        time.sleep(60)
+        self.find_storage_devices()
+
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
@@ -89,3 +141,5 @@ if __name__ == '__main__':
     window.show()
 
     app.exec_()
+
+    
