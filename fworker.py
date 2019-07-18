@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import QTimer
 
 from gui import mainwindow
+from devices import Devices
 
 import sys
 
@@ -12,6 +13,10 @@ class MainWindow(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
         self.setupUi(self)
         self.enableItems(False)
+
+        self.__devices = Devices()
+        self.__USBDevices = self.__devices.findUSBDevices()
+
         
     def enableItems(self, enable):
         self.pushButton_sync.setEnabled(enable)
@@ -30,7 +35,7 @@ class FWorker():
     ''' Class is responsible for everything relates to file managment. '''
 
     def __init__(self):
-        self.__devices = Devices()
+        # self.__devices = Devices()
         pass
 
     def copyFiles(self):
