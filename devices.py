@@ -25,6 +25,11 @@ class Devices():
                     vsn = os.stat(drive_letter + ':').st_dev
                     SN = '{:04X}-{:04X}'.format(vsn >> 16, vsn & 0xffff)
 
-                    result.append({'Path': drive_letter, 'Type': drive_type, 'SN': SN})
+                    result.append({'Path': drive_letter, 
+                        'Type': drive_type, 
+                        'SN': SN,
+                        'DevFolder': None,
+                        'PcFolder': None
+                        })
 
         return result

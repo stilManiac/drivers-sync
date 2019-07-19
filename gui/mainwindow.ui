@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>619</width>
-    <height>392</height>
+    <width>541</width>
+    <height>407</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,9 +17,9 @@
    <widget class="QComboBox" name="comboBox">
     <property name="geometry">
      <rect>
-      <x>127</x>
+      <x>160</x>
       <y>18</y>
-      <width>211</width>
+      <width>51</width>
       <height>21</height>
      </rect>
     </property>
@@ -27,7 +27,7 @@
    <widget class="QLabel" name="label_selectdevice">
     <property name="geometry">
      <rect>
-      <x>20</x>
+      <x>50</x>
       <y>20</y>
       <width>81</width>
       <height>16</height>
@@ -37,23 +37,10 @@
      <string>Select device:</string>
     </property>
    </widget>
-   <widget class="QCheckBox" name="checkBox_rememberDevice">
-    <property name="geometry">
-     <rect>
-      <x>350</x>
-      <y>19</y>
-      <width>131</width>
-      <height>20</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Remember device</string>
-    </property>
-   </widget>
    <widget class="QPushButton" name="pushButton_selectPcPath">
     <property name="geometry">
      <rect>
-      <x>130</x>
+      <x>160</x>
       <y>60</y>
       <width>121</width>
       <height>28</height>
@@ -66,7 +53,7 @@
    <widget class="QPushButton" name="pushButton_selectDevicePath">
     <property name="geometry">
      <rect>
-      <x>130</x>
+      <x>160</x>
       <y>100</y>
       <width>121</width>
       <height>28</height>
@@ -79,7 +66,7 @@
    <widget class="QLabel" name="label_isComputerFolderSelected">
     <property name="geometry">
      <rect>
-      <x>260</x>
+      <x>50</x>
       <y>66</y>
       <width>81</width>
       <height>16</height>
@@ -89,24 +76,24 @@
      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#00aa00;&quot;&gt;Selected!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_isDeviceFolderSelected_2">
+   <widget class="QLabel" name="label_isDeviceFolderSelected">
     <property name="geometry">
      <rect>
-      <x>260</x>
+      <x>50</x>
       <y>106</y>
       <width>81</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#aa0000;&quot;&gt;Not selected!&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     <string>&lt;span style=&quot; color:#aa0000;&quot;&gt;Not selected!&lt;/span&gt;</string>
     </property>
    </widget>
    <widget class="QGroupBox" name="groupBox_leader">
     <property name="geometry">
      <rect>
-      <x>10</x>
-      <y>160</y>
+      <x>50</x>
+      <y>150</y>
       <width>241</width>
       <height>61</height>
      </rect>
@@ -150,9 +137,9 @@
    <widget class="QGroupBox" name="groupBox_permissions">
     <property name="geometry">
      <rect>
-      <x>270</x>
-      <y>160</y>
-      <width>291</width>
+      <x>50</x>
+      <y>230</y>
+      <width>241</width>
       <height>91</height>
      </rect>
     </property>
@@ -195,8 +182,8 @@
    <widget class="QPushButton" name="pushButton_sync">
     <property name="geometry">
      <rect>
-      <x>400</x>
-      <y>80</y>
+      <x>410</x>
+      <y>330</y>
       <width>93</width>
       <height>28</height>
      </rect>
@@ -205,19 +192,68 @@
      <string>Sync</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="pushButton_clearPcFolder">
+    <property name="geometry">
+     <rect>
+      <x>290</x>
+      <y>60</y>
+      <width>51</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Clear</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_clearDeviceFolder">
+    <property name="geometry">
+     <rect>
+      <x>290</x>
+      <y>100</y>
+      <width>51</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Clear</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_saveSettings">
+    <property name="geometry">
+     <rect>
+      <x>50</x>
+      <y>330</y>
+      <width>93</width>
+      <height>28</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Save settings</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>619</width>
+     <width>541</width>
      <height>21</height>
     </rect>
    </property>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <tabstops>
+  <tabstop>pushButton_selectPcPath</tabstop>
+  <tabstop>pushButton_selectDevicePath</tabstop>
+  <tabstop>comboBox</tabstop>
+  <tabstop>radioButton_PcLeader</tabstop>
+  <tabstop>radioButton_deviceLeader</tabstop>
+  <tabstop>checkBox_deleteOldFiles</tabstop>
+  <tabstop>checkBox_copyNewFiles</tabstop>
+  <tabstop>pushButton_sync</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>
