@@ -19,7 +19,6 @@ class MainWindow(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.data = settings.value('data')
         # print(self.data)
 
-
         self.__devices = Devices()
         self.__USBDevices = self.__devices.findUSBDevices()
 
@@ -35,8 +34,57 @@ class MainWindow(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
         self.pushButton_saveSettings.clicked.connect(self.saveSettings)
 
+        # 1 - PC, 2 - Device
+        self.pushButton_selectPcPath.clicked.connect(lambda: self.selectPath(1))
+        self.pushButton_selectDevicePath.clicked.connect(lambda: self.selectPath(2))
+
+        self.pushButton_clearPcFolder.clicked.connect(lambda: self.clearPath(1))
+        self.pushButton_clearDeviceFolder.clicked.connect(lambda: self.clearPath(2))
+
         # When user changes disk
         self.comboBox.currentIndexChanged.connect(self.loadSettings)
+
+
+    def clearPath(self, dev):
+        if dev == 1:
+            self.__USBDevices[self.comboBox.currentIndex()]['PcFolder'] = None
+            self.label_isComputerFolderSelected.setText('''<span style=" color:#aa0000;">Not selected!</span>''')
+        elif dev == 2:
+            self.__USBDevices[self.comboBox.currentIndex()]['DevFolder'] = None
+            self.label_isDeviceFolderSelected.setText('''<span style=" color:#aa0000;">Not selected!</span>''')
+
+        self.saveSettings()
+
+
+
+    def selectPath(self, dev):
+
+        # PC 
+        if dev == 1: 
+            path = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
+            if len(path) != 0: 
+                self.__USBDevices[self.comboBox.currentIndex()]['PcFolder'] = path
+                self.saveSettings()
+
+                self.label_isComputerFolderSelected.setText('''<span style=" color:#00aa00;">Selected!</span>''')
+        # Extern. device
+        elif dev == 2:
+            devPath = self.__USBDevices[self.comboBox.currentIndex()]['Path'] + ':\\'
+            path = str(QFileDialog.getExistingDirectory(self, "Select Directory", devPath))
+
+            if len(path) != 0: 
+                if path[0] != self.__USBDevices[self.comboBox.currentIndex()]['Path']:
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Critical)
+                    msg.setText("You didn't select your external device's directory (must be a same disk letter)")
+                    msg.setWindowTitle("Failed!")
+                    msg.setStandardButtons(QMessageBox.Ok)
+                    msg.exec_()
+                else:
+                    self.__USBDevices[self.comboBox.currentIndex()]['DevFolder'] = path
+                    self.saveSettings()
+
+                    self.label_isDeviceFolderSelected.setText('''<span style=" color:#00aa00;">Selected!</span>''')
 
 
     def closeEvent(self, event):
