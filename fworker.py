@@ -19,6 +19,8 @@ class MainWindow(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.data = settings.value('data')
         # print(self.data)
 
+        self.__fworker = FWorker()
+
         self.__devices = Devices()
         self.__USBDevices = self.__devices.findUSBDevices()
 
@@ -27,12 +29,12 @@ class MainWindow(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
             for item in self.__USBDevices:
                 self.comboBox.addItems([item['Path'] + ':/'])
 
-
-
         # Load settings
         self.loadSettings()
 
         self.pushButton_saveSettings.clicked.connect(self.saveSettings)
+
+        self.pushButton_sync.clicked.connect(lambda: self.__fworker.syncDevices(self.__USBDevices[self.comboBox.currentIndex()]))
 
         # 1 - PC, 2 - Device
         self.pushButton_selectPcPath.clicked.connect(lambda: self.selectPath(1))
@@ -63,10 +65,19 @@ class MainWindow(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         if dev == 1: 
             path = str(QFileDialog.getExistingDirectory(self, "Select Directory"))
             if len(path) != 0: 
-                self.__USBDevices[self.comboBox.currentIndex()]['PcFolder'] = path
-                self.saveSettings()
+                if path[0] == self.__USBDevices[self.comboBox.currentIndex()]['Path']:
+                    msg = QMessageBox()
+                    msg.setIcon(QMessageBox.Critical)
+                    msg.setText("You tried to select external device's directory. Please, select computer's one.")
+                    msg.setWindowTitle("Failed!")
+                    msg.setStandardButtons(QMessageBox.Ok)
+                    msg.exec_()
 
-                self.label_isComputerFolderSelected.setText('''<span style=" color:#00aa00;">Selected!</span>''')
+                else:
+                    self.__USBDevices[self.comboBox.currentIndex()]['PcFolder'] = path
+                    self.saveSettings()
+
+                    self.label_isComputerFolderSelected.setText('''<span style=" color:#00aa00;">Selected!</span>''')
         # Extern. device
         elif dev == 2:
             devPath = self.__USBDevices[self.comboBox.currentIndex()]['Path'] + ':\\'
@@ -86,11 +97,16 @@ class MainWindow(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
                     self.label_isDeviceFolderSelected.setText('''<span style=" color:#00aa00;">Selected!</span>''')
 
+        if self.__USBDevices[self.comboBox.currentIndex()]['DevFolder'] is not None and self.__USBDevices[self.comboBox.currentIndex()]['PcFolder'] is not None:
+            self.allowSync(True)
+
 
     def closeEvent(self, event):
         self.saveSettings()
         print(self.data[0])
         print(self.data[1])
+
+        # settings.setValue('data', None)
 
     def loadSettings(self):
         if self.data is not None and len(self.__USBDevices) != 0:
@@ -103,6 +119,13 @@ class MainWindow(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                     self.__USBDevices[self.comboBox.currentIndex()]['AllowCopy'] = item['AllowCopy'] 
                     self.__USBDevices[self.comboBox.currentIndex()]['PcFolder'] = item['PcFolder'] 
                     self.__USBDevices[self.comboBox.currentIndex()]['DevFolder'] = item['DevFolder'] 
+
+                    if item['PcFolder'] is None or item['DevFolder'] is None:
+                        self.allowSync(False)
+
+                    elif item['PcFolder'] is not None and item['DevFolder'] is not None:
+                        self.allowSync(True)
+
 
                     if item['Leader'] == 'Computer':
                         self.radioButton_deviceLeader.setChecked(False)
@@ -153,6 +176,13 @@ class MainWindow(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
 
                     settings.setValue('data', None)
                     settings.setValue('data', self.data) 
+
+                    if item['PcFolder'] is not None and item['DevFolder'] is not None:
+                        self.allowSync(True)
+                    else:
+                        self.allowSync(False)
+
+
                     break
 
             # if device is not in saved data
@@ -180,7 +210,11 @@ class MainWindow(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
                 settings.setValue('data', self.data) 
 
 
+    def allowSync(self, enable):
+        self.pushButton_sync.setEnabled(enable) 
+
     def enableItems(self, enable):
+        self.pushButton_saveSettings.setEnabled(enable)
         self.pushButton_sync.setEnabled(enable)
         self.radioButton_deviceLeader.setEnabled(enable)
         self.radioButton_PcLeader.setEnabled(enable)
@@ -192,14 +226,84 @@ class MainWindow(QtWidgets.QMainWindow, mainwindow.Ui_MainWindow):
         self.pushButton_clearDeviceFolder.setEnabled(enable)
 
 
+import os
+from os import listdir
+from os.path import isfile, join
+import shutil
 
 class FWorker():
-
     ''' Class is responsible for everything relates to file managment. '''
 
     def __init__(self):
         # self.__devices = Devices()
         pass
+
+    def syncDevices(self, devInfo):
+        flashpath = devInfo['DevFolder']
+        pcpath = devInfo['PcFolder']
+        leader = devInfo['Leader']
+        allowCopy = devInfo['AllowCopy']
+        allowDelete = devInfo['AllowDelete']
+
+        flashfiles = [f for f in listdir(flashpath) if isfile(join(flashpath, f))] 
+        pcfiles = [f for f in listdir(pcpath) if isfile(join(pcpath, f))] 
+
+        pcfiles = list()
+        for (dirpath, dirnames, filenames) in os.walk(pcpath):
+            pcfiles += [os.path.join(dirpath, file) for file in filenames]
+
+        flashfiles = list()
+        for (dirpath, dirnames, filenames) in os.walk(flashpath):
+            flashfiles += [os.path.join(dirpath, file) for file in filenames]
+
+        if leader == 'Computer':
+            for pcfile in pcfiles: 
+                synced = False
+
+                # FIX HASH OF zero-length files!!!!!!!!
+                for ffile in flashfiles: 
+                    if self.get_hash(pcfile) == self.get_hash(ffile):
+                        # If even 1 file is matched, delete this element from list to avoid duplicates 
+                        flashfiles.remove(ffile)
+                        synced = True
+                
+                # If noone file is matched, copying..
+                if synced == False:
+                    fullfp = flashpath + pcfile.replace(pcpath, '')
+                    fullfpnoname = '\\'.join(fullfp.split('\\')[0:-1])
+
+                    if not os.path.isdir(fullfpnoname):
+                        os.mkdir(fullfpnoname)
+
+                    shutil.copy2(pcfile, flashpath + pcfile.replace(pcpath, ''))
+                    print('FILE %s WAS COPIED' % os.path.join(pcpath, pcfile))
+
+            # Delete files
+            if allowDelete is True:
+                todelete = (list(set(flashfiles) - set(pcfiles)))
+                for ffile in todelete:
+                    os.remove(ffile)
+                    print('FILE %s WAS DELETED' % ffile)
+
+
+
+    # Get hash of file
+    def get_hash(self, filepath):
+        import hashlib
+
+        buf_size = 65536
+        # sha1 = hashlib.sha1()
+        md5 = hashlib.md5()
+
+        with open(filepath, 'rb') as f:
+            while True:
+                data = f.read(buf_size)
+                if not data:
+                    break
+
+                md5.update(data)
+
+        return md5.hexdigest().upper()
 
     def copyFiles(self):
         pass
