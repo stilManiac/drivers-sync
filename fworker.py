@@ -245,9 +245,6 @@ class FWorker():
         allowCopy = devInfo['AllowCopy']
         allowDelete = devInfo['AllowDelete']
 
-        flashfiles = [f for f in listdir(flashpath) if isfile(join(flashpath, f))] 
-        pcfiles = [f for f in listdir(pcpath) if isfile(join(pcpath, f))] 
-
         pcfiles = list()
         for (dirpath, dirnames, filenames) in os.walk(pcpath):
             pcfiles += [os.path.join(dirpath, file) for file in filenames]
@@ -257,37 +254,52 @@ class FWorker():
             flashfiles += [os.path.join(dirpath, file) for file in filenames]
 
         if leader == 'Computer':
-            for pcfile in pcfiles: 
-                synced = False
-
-                # FIX HASH OF zero-length files!!!!!!!!
-                for ffile in flashfiles: 
-                    if self.get_hash(pcfile) == self.get_hash(ffile):
-                        # If even 1 file is matched, delete this element from list to avoid duplicates 
-                        flashfiles.remove(ffile)
-                        synced = True
-                
-                # If noone file is matched, copying..
-                if synced == False:
-                    fullfp = flashpath + pcfile.replace(pcpath, '')
-                    fullfpnoname = '\\'.join(fullfp.split('\\')[0:-1])
-
-                    if not os.path.isdir(fullfpnoname):
-                        os.mkdir(fullfpnoname)
-
-                    shutil.copy2(pcfile, flashpath + pcfile.replace(pcpath, ''))
-                    print('FILE %s WAS COPIED' % os.path.join(pcpath, pcfile))
+            self.copyFiles(pcfiles, flashfiles, pcpath, flashpath)
 
             # Delete files
             if allowDelete is True:
-                todelete = (list(set(flashfiles) - set(pcfiles)))
-                for ffile in todelete:
-                    os.remove(ffile)
-                    print('FILE %s WAS DELETED' % ffile)
+                self.deleteFiles(pcfiles, flashfiles)
 
 
+        else:
+            self.copyFiles(flashfiles, pcfiles, flashpath, pcpath)
+            
+            # Delete files
+            if allowDelete is True:
+                self.deleteFiles(flashfiles, pcfiles)
 
-    # Get hash of file
+
+    def copyFiles(self, leaderFiles, submissionFiles, leaderPath, submissionPath):
+        for leaderFile in leaderFiles: 
+            synced = False
+
+            # TODO: FIX HASH OF zero-length files!!!!!!!!
+            for submissionFile in submissionFiles: 
+                if self.get_hash(leaderFile) == self.get_hash(submissionFile):
+                    # If even 1 file is matched, delete this element from list to avoid duplicates 
+                    submissionFiles.remove(submissionFile)
+                    synced = True
+            
+            # If noone file is matched, copying..
+            if synced == False:
+                fullfp = submissionPath + leaderFile.replace(leaderPath, '')
+                fullfpnoname = '\\'.join(fullfp.split('\\')[0:-1])
+
+                if not os.path.isdir(fullfpnoname):
+                    os.mkdir(fullfpnoname)
+
+                shutil.copy2(leaderFile, submissionPath + leaderFile.replace(leaderPath, ''))
+                # print('FILE %s WAS COPIED' % os.path.join(pcpath, pcfile))
+
+
+    def deleteFiles(self, leaderFiles, submissionFiles):
+        todelete = (list(set(submissionFiles) - set(leaderFiles)))
+        for submissionFile in todelete:
+            os.remove(submissionFile)
+            # print('FILE %s WAS DELETED' % submissionFile)
+
+
+     # Get hash of file
     def get_hash(self, filepath):
         import hashlib
 
@@ -305,13 +317,7 @@ class FWorker():
 
         return md5.hexdigest().upper()
 
-    def copyFiles(self):
-        pass
-
-    def deleteFiles(self):
-        pass
-
-   
+  
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     window = MainWindow()
